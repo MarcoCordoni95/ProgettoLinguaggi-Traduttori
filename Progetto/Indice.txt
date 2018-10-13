@@ -1,0 +1,10 @@
+Indice:
+
+expr.lex: 			file di specifica lessicale
+expr.cup: 			file di specifica sintattica
+Descrittore.java: 	descrittori degli identificatori
+SymbolTable.java: 	struttura per memorizzare i descrittori
+Expr.java: 			classi per definire gli alberi
+tuple.java : 		classe per definire la struttura che rappresenta la sumbol table, il vettore di espressioni da valutare 
+					e la condizione di ripetizione
+Main.java: contiene applicazione (metodo main)

@@ -1,0 +1,111 @@
+import java_cup.runtime.*;
+import java.util.Vector;
+
+class Parser;    
+
+action code {: 	
+				SymbolTable symbolTable = new SymbolTable(); 
+				Vector<Expr> vect = new Vector<Expr>();
+				Expr whileExpr = new NumExpr(0);
+			:}
+
+/* Simboli terminali (token restituiti dallo scanner). */
+terminal 			WHILE, KEEPING;
+terminal          	PIU, MENO, PER, DIVISO, RESTO;
+terminal           	UNARIO, TONDA_APERTA, TONDA_CHIUSA, SEPARATORE, INCREMENTO, DECREMENTO, ASSEGNAMENTO, VIRGOLA;
+terminal Integer   	NUMERO;
+terminal String    	IDENT;
+
+/* Non terminali */
+non terminal ripetizione, direttivaWhile, direttivaKeep, seqIdent;
+non terminal Expr expr;
+non terminal Boolean seqExpr;
+non terminal Tuple programma;
+
+/* Precedenze e associativita' */
+precedence right ASSEGNAMENTO;
+precedence left PIU, MENO;
+precedence left PER, DIVISO, RESTO;
+precedence nonassoc UNARIO, INCREMENTO, DECREMENTO;
+
+/* Simbolo iniziale */
+start with programma;
+
+/* Produzioni */
+programma	::= seqExpr ripetizione {: RESULT = new Tuple(symbolTable, vect, whileExpr); :};
+
+seqExpr		::= expr:e SEPARATORE  {: RESULT = vect.add(e); :}
+				| seqExpr:se expr:e SEPARATORE  {: RESULT = vect.add(e); :};
+
+expr      ::= expr:e1 PIU expr:e2    
+	      {: RESULT = new PiuExpr(e1, e2); :} 
+	      | 
+              expr:e1 MENO expr:e2    
+          {: RESULT = new MenoExpr(e1, e2); :} 
+	      | 
+              expr:e1 PER expr:e2 
+	      {: RESULT = new PerExpr(e1, e2); :} 
+	      | 
+              expr:e1 DIVISO expr:e2 
+	      {: RESULT = new DivisoExpr(e1, e2); :} 
+	      | 
+              expr:e1 RESTO expr:e2 
+	      {: RESULT = new RestoExpr(e1, e2); :} 	      
+	      | 
+              NUMERO:n                 
+	      {: RESULT = new NumExpr(n); :} 
+	      |
+          	  IDENT:id              
+          {: Descrittore d = symbolTable.trovaEAggiungi(id);
+             RESULT = new IdExpr(d); :} 
+          | 
+              MENO expr:e             
+	      {: RESULT = new UnMenoExpr(e); :} 
+	      %prec UNARIO
+	      | 
+              PIU expr:e             
+	      {: RESULT = new UnPiuExpr(e); :} 
+	      %prec UNARIO
+	      | 
+              INCREMENTO IDENT:id             
+          {: Descrittore d = symbolTable.trovaEAggiungi(id);
+             RESULT = new IncrPreExpr(d); :} 
+	      %prec UNARIO	      
+	      | 
+              IDENT:id INCREMENTO
+          {: Descrittore d = symbolTable.trovaEAggiungi(id);
+             RESULT = new IncrPosExpr(d); :} 
+	      %prec UNARIO	     
+	      | 
+              DECREMENTO IDENT:id             
+          {: Descrittore d = symbolTable.trovaEAggiungi(id);
+             RESULT = new DecPreExpr(d); :} 
+	      %prec UNARIO	      
+	      | 
+              IDENT:id DECREMENTO
+          {: Descrittore d = symbolTable.trovaEAggiungi(id);
+             RESULT = new DecPosExpr(d); :} 
+	      %prec UNARIO	  	 
+	      | 
+              IDENT:id ASSEGNAMENTO expr:e
+          {: Descrittore d = symbolTable.trovaEAggiungi(id);
+             RESULT = new AssExpr(d,e); :} 	           	      
+	      | 
+              TONDA_APERTA expr:e TONDA_CHIUSA
+	      {: RESULT = e; :};
+
+ripetizione ::= direttivaWhile direttivaKeep
+	      | ;
+
+direttivaWhile ::= WHILE expr:e    
+	      {: whileExpr = e; :}; 	
+
+direttivaKeep ::= KEEPING seqIdent	
+           	      | ;
+
+seqIdent ::=	IDENT:id
+				{: Descrittore d = symbolTable.trovaEAggiungi(id);
+				   d.setKeeping(); :} 
+				| seqIdent VIRGOLA IDENT:id
+				{: Descrittore d = symbolTable.trovaEAggiungi(id);
+				   d.setKeeping(); :};
